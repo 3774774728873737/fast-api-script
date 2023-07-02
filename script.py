@@ -53,21 +53,7 @@ async def upload_audio(file: UploadFile = File(...)):
     return response
 
 
-@app.post("/upload")
-async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
-    with open(f"video{videoNumber}.mp4", "wb") as f:
-        f.write(await file.read())
-        
-    # Generate thumbnail image for the uploaded video
-    video_capture = cv2.VideoCapture(f"video{videoNumber}.mp4")
-    success, frame = video_capture.read()
-    if success:
-        thumbnail_path = f"thumbnail{videoNumber}.jpg"
-        cv2.imwrite(thumbnail_path, frame)
-    else:
-        thumbnail_path = None
 
-    return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_path})
 
 @app.get("/combine")
 async def combine_videos():
