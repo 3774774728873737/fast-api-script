@@ -1,5 +1,4 @@
 fastapi==0.68.1
 opencv-python==4.5.3.56
-numpy==1.25.0
 moviepy==1.0.3
 uvicorn==0.22.0
