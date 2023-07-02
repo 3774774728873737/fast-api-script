@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from moviepy.editor import VideoFileClip, clips_array
 from moviepy.editor import *
 import os
+import cv2
 import uvicorn
 
 
