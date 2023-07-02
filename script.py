@@ -1,13 +1,10 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 
 app = FastAPI()
 
-class Numbers(BaseModel):
-    number1: float
-    number2: float
+#domain where this api is hosted for example : localhost:5000/docs to see swagger documentation automagically generated.
 
-@app.post("/sum")
-def calculate_sum(numbers: Numbers):
-    result = numbers.number1 + numbers.number2
-    return {"sum": result}
+
+@app.get("/")
+def home():
+    return {"message":"Hello TutLinks.com"}
