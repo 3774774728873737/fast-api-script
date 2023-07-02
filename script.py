@@ -1,6 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
-import cv2
 import subprocess
 from fastapi.middleware.cors import CORSMiddleware
 from moviepy.editor import VideoFileClip, clips_array
