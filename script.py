@@ -6,9 +6,8 @@ from moviepy.editor import VideoFileClip, clips_array
 from moviepy.editor import *
 import os
 import base64
-import dropbox
 import uvicorn
-import numpy as np
+from typing import List
 
 
 global audioname
@@ -18,16 +17,11 @@ audioname = None
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update this with your desired origins
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-@app.post("/delete")
-async def delete():
-    if os.path.exists("test.mp4"):
-        os.remove("test.mp4")
 
 
 @app.post("/upload-audio")
@@ -52,6 +46,18 @@ async def upload_audio(file: UploadFile = File(...)):
     return response
 
 
+@app.post("/upload-videos")
+async def upload_videos(files: List[UploadFile] = File(...)):
+    print(files)
+    i = 1
+    for file in files:
+        with open(f"video{i}.mp4", "wb") as f:
+            f.write(await file.read())
+        i+=1
+
+    return {"message": "Videos uploaded successfully"}
+
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
     with open(f"video{videoNumber}.mp4", "wb") as f:
@@ -73,40 +79,29 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
     else:
         thumbnail_base64 = None
 
-
-    # Access token for your Dropbox account
-    ACCESS_TOKEN = 'sl.Bhk8h8HlrUCzOuTqueQn5_uOw_POCmC8F69XdTbugRSRya0tq0ZZ4ljMqgKf0v7qCBSJ3j_07w67t48TmGisoZTiCVVQePbkoFeVk56ZZfa8uB8gHoTCcL_BJOq4q4ym3xGv9phh'
-
-    # Local file path to upload
-    LOCAL_FILE_PATH = f"video{videoNumber}.mp4"
-
-    # Destination file path in Dropbox
-    DROPBOX_FILE_PATH = '/video123.mp4'
-
-    dbx = dropbox.Dropbox(ACCESS_TOKEN)
-
-        # Open the local file in read mode
-    with open(LOCAL_FILE_PATH, 'rb') as f:
-            # Upload the file to Dropbox
-        dbx.files_upload(f.read(), DROPBOX_FILE_PATH)
         
     return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
 
 
-@app.get("/combine")
-async def combine_videos():
+@app.post("/combine")
+async def combine_videos(files: List[UploadFile] = File(...)):
+
+    for i, file in enumerate(files, start=1):
+        with open(f"video{i}2.mp4", "wb") as f:
+            f.write(await file.read())
+
     global audioname
 
-    videos = ["video1.mp4", "video2.mp4", "video3.mp4"]
+    videos = ["video12.mp4", "video22.mp4", "video32.mp4"]
     length = 6
 
-    clip1 = VideoFileClip("video1.mp4").subclip(0, 0 + length)
+    clip1 = VideoFileClip("video12.mp4").subclip(0, 0 + length)
     # get audio of clip
     aud1 = clip1.audio
-    clip2 = VideoFileClip("video2.mp4").subclip(0, 0 + length)
+    clip2 = VideoFileClip("video22.mp4").subclip(0, 0 + length)
     # get audio of clip
     aud2 = clip2.audio
-    clip3 = VideoFileClip("video3.mp4").subclip(0, 0 + length)
+    clip3 = VideoFileClip("video32.mp4").subclip(0, 0 + length)
     # get audio of clip
     aud3 = clip3.audio
 
@@ -136,26 +131,5 @@ async def combine_videos():
     # close
     audioname = None
 
-    # close all
-    clip1.reader.close()
-    clip2.reader.close()
-    clip3.reader.close()
-
-    # close audio
-    aud1.reader.close_proc()
-    aud2.reader.close_proc()
-    aud3.reader.close_proc()
-
-    # remove videos
-    os.remove("video1.mp4")
-    os.remove("video2.mp4")
-    os.remove("video3.mp4")
-
-    # remove thumbnail
-    os.remove("thumbnail1.jpg")
-    os.remove("thumbnail2.jpg")
-    os.remove("thumbnail3.jpg")
-
     return FileResponse("test.mp4", media_type="video/mp4")
-
 
