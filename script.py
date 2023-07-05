@@ -57,11 +57,11 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
         f.write(await file.read())
 
     # Generate thumbnail image for the uploaded video
-    video_capture = cv2.VideoCapture(f"video{videoNumber}3455.mp4")
+    video_capture = cv2.VideoCapture(f"video{videoNumber}.mp4")
     success, frame = video_capture.read()
     if success:
         # Save the thumbnail as a temporary file
-        thumbnail_path = f"thumbnail{videoNumber}.jpg"
+        thumbnail_path = f"thumbnail{videoNumber}23.jpg"
         cv2.imwrite(thumbnail_path, frame)
 
         # Read the thumbnail image and convert it to base64
