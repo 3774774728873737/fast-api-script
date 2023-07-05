@@ -83,34 +83,64 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
 
 @app.post("/combine")
 async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
-    video_clips = []
-    audio_clips = []
-    
     for i, file in enumerate(files, start=1):
         with open(f"video{i}2.mp4", "wb") as f:
             f.write(await file.read())
-        video_clip = VideoFileClip(f"video{i}2.mp4")
-        video_clips.append(video_clip)
-        
+
     if audio is not None:
+        # Save the uploaded audio file
         with open("audio232.mp3", "wb") as f:
             f.write(await audio.read())
-        audio_clip = AudioFileClip("audio232.mp3")
-        audio_clips.append(audio_clip)
 
-    final_clip = concatenate_videoclips(video_clips)
-    final_audio = concatenate_audioclips(audio_clips) if audio_clips else None
-    
-    if final_audio is not None:
-        final_clip = final_clip.set_audio(final_audio)
-        
-    final_clip.write_videofile("test.mp4", codec="libx264", audio_codec="aac", temp_audiofile="temp-audio.m4a", remove_temp=True)
-    
-    for clip in video_clips:
-        clip.reader.close()
-        clip.audio.reader.close_proc()
-    if final_audio is not None:
-        final_audio.reader.close_proc()
+    else:
+        print("no audio")
+
+    global audioname
+
+    videos = ["video12.mp4", "video22.mp4", "video32.mp4"]
+    length = 6
+
+    chunk_duration = 2  # Duration of each chunk in seconds
+
+    processed_chunks = []
+    output_width = 1280
+    output_height = 720
+
+    # Process each chunk separately
+    for i, video in enumerate(videos, start=1):
+        clip = VideoFileClip(video).subclip(0, 0 + length)
+
+        # Get the audio of the clip
+        audio_clip = clip.audio
+
+        # Split the clip into chunks
+        num_chunks = int(clip.duration / chunk_duration)
+        for j in range(num_chunks):
+            start_time = j * chunk_duration
+            end_time = (j + 1) * chunk_duration
+
+            # Process the chunk
+            processed_chunk = clip.subclip(start_time, end_time).resize((output_width, output_height))
+
+            if audio is not None:
+                # Trim audio clip to match the duration of the chunk
+                audio_chunk = audio_clip.subclip(start_time, end_time)
+                composite_audio = CompositeAudioClip([audio_chunk, audio])
+                processed_chunk = processed_chunk.set_audio(composite_audio)
+
+            # Store the processed chunk
+            processed_chunks.append(processed_chunk)
+
+    # Concatenate the processed chunks to create the final video
+    final_clip = concatenate_videoclips(processed_chunks)
+
+    # Write the final video file
+    final_clip.write_videofile("test.mp4")
+
+    # Close the clips
+    final_clip.close()
+    for chunk in processed_chunks:
+        chunk.close()
 
     return FileResponse("test.mp4", media_type="video/mp4")
 
