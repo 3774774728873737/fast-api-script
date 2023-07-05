@@ -74,10 +74,22 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
         thumbnail_base64 = None
 
 
+    # Access token for your Dropbox account
+    ACCESS_TOKEN = 'sl.Bhk8h8HlrUCzOuTqueQn5_uOw_POCmC8F69XdTbugRSRya0tq0ZZ4ljMqgKf0v7qCBSJ3j_07w67t48TmGisoZTiCVVQePbkoFeVk56ZZfa8uB8gHoTCcL_BJOq4q4ym3xGv9phh'
 
+    # Local file path to upload
+    LOCAL_FILE_PATH = f"video{videoNumber}.mp4"
 
+    # Destination file path in Dropbox
+    DROPBOX_FILE_PATH = '/video123.mp4'
 
+    dbx = dropbox.Dropbox(ACCESS_TOKEN)
 
+        # Open the local file in read mode
+    with open(LOCAL_FILE_PATH, 'rb') as f:
+            # Upload the file to Dropbox
+        dbx.files_upload(f.read(), DROPBOX_FILE_PATH)
+        
     return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
 
 
@@ -147,5 +159,3 @@ async def combine_videos():
     return FileResponse("test.mp4", media_type="video/mp4")
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000)
