@@ -15,6 +15,7 @@ audioname = None
 
 
 app = FastAPI()
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,26 +24,15 @@ app.add_middleware(
 )
 
 
-
 @app.post("/upload-audio")
 async def upload_audio(file: UploadFile = File(...)):
     # Save the uploaded audio file
-    i = 1
-    while True:
-        if os.path.exists(f"audio{i}.mp3"):
-            i += 1
-        else:
-            break
-
-    with open(f"audio{i}.mp3", "wb") as f:
+    with open("audio.mp3", "wb") as f:
         f.write(await file.read())
-
-    global audioname
-    audioname = f"audio{i}.mp3"
 
     # Provide the file for download
     response = FileResponse(file.filename, media_type="audio/mpeg")
-    response.headers["Content-Disposition"] = f'attachment; filename="{file.filename}"'
+    response.headers["Content-Disposition"] =f'attachment; filename="{file.filename}"'
     return response
 
 
@@ -53,7 +43,7 @@ async def upload_videos(files: List[UploadFile] = File(...)):
     for file in files:
         with open(f"video{i}.mp4", "wb") as f:
             f.write(await file.read())
-        i+=1
+        i += 1
 
     return {"message": "Videos uploaded successfully"}
 
@@ -68,7 +58,7 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
     success, frame = video_capture.read()
     if success:
         # Save the thumbnail as a temporary file
-        thumbnail_path = f"thumbnail{videoNumber}23.jpg"
+        thumbnail_path = f"thumbnail{videoNumber}.jpg"
         cv2.imwrite(thumbnail_path, frame)
 
         # Read the thumbnail image and convert it to base64
@@ -79,29 +69,40 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
     else:
         thumbnail_base64 = None
 
-        
     return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
 
 
 @app.post("/combine")
-async def combine_videos(files: List[UploadFile] = File(...)):
+async def combine_videos(data: dict):
+    files = data.get('files', [])
+    audio = data.get('audio', None)
 
+    print(audio)
+
+    audios = None
     for i, file in enumerate(files, start=1):
-        with open(f"video{i}2.mp4", "wb") as f:
+        with open(f"video{i}.mp4", "wb") as f:
             f.write(await file.read())
 
-    global audioname
+    if audio is not None:
+        with open("audio.mp3", "wb") as f:
+            f.write(await audio.read())
+    else:
+        pass
 
-    videos = ["video12.mp4", "video22.mp4", "video32.mp4"]
-    length = 6
+    print(audios)
 
-    clip1 = VideoFileClip("video12.mp4").subclip(0, 0 + length)
+
+    videos = ["video1.mp4", "video2.mp4", "video3.mp4"]
+    length = 4
+
+    clip1 = VideoFileClip("video1.mp4").subclip(0, 0 + length)
     # get audio of clip
     aud1 = clip1.audio
-    clip2 = VideoFileClip("video22.mp4").subclip(0, 0 + length)
+    clip2 = VideoFileClip("video2.mp4").subclip(0, 0 + length)
     # get audio of clip
     aud2 = clip2.audio
-    clip3 = VideoFileClip("video32.mp4").subclip(0, 0 + length)
+    clip3 = VideoFileClip("video3.mp4").subclip(0, 0 + length)
     # get audio of clip
     aud3 = clip3.audio
 
@@ -115,10 +116,16 @@ async def combine_videos(files: List[UploadFile] = File(...)):
 
     combined2 = combined.resize((output_width, output_height))
 
-    if audioname != None:
-        print("runs")
+    # check if audio file present in directory
+
+    if os.path.isfile("audio.mp3"):
+        print("audio file present")
+        audios = True
+
+    if audios:
+        
         # Trim audio clip to match the duration of the video
-        audio = AudioFileClip(audioname).subclip(0, combined2.duration)
+        audio = AudioFileClip("audio.mp3").subclip(0, combined2.duration)
         composite_audio = CompositeAudioClip([audio, aud1, aud2, aud3])
         combined2 = combined2.set_audio(composite_audio)
         combined2.write_videofile("test.mp4")
@@ -128,8 +135,4 @@ async def combine_videos(files: List[UploadFile] = File(...)):
         print("not runs")
         combined2.write_videofile("test.mp4")
 
-    # close
-    audioname = None
-
     return FileResponse("test.mp4", media_type="video/mp4")
-
