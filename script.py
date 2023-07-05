@@ -1,12 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
-import subprocess
+import cv2
 from fastapi.middleware.cors import CORSMiddleware
 from moviepy.editor import VideoFileClip, clips_array
 from moviepy.editor import *
 import os
-import cv2
+import base64
 import uvicorn
+import numpy as np
 
 
 global audioname
@@ -22,18 +23,15 @@ app.add_middleware(
 )
 
 
-
 @app.post("/delete")
 async def delete():
     if os.path.exists("test.mp4"):
         os.remove("test.mp4")
 
 
-
 @app.post("/upload-audio")
 async def upload_audio(file: UploadFile = File(...)):
     # Save the uploaded audio file
-
     i = 1
     while True:
         if os.path.exists(f"audio{i}.mp3"):
@@ -43,7 +41,7 @@ async def upload_audio(file: UploadFile = File(...)):
 
     with open(f"audio{i}.mp3", "wb") as f:
         f.write(await file.read())
-    
+
     global audioname
     audioname = f"audio{i}.mp3"
 
@@ -52,28 +50,38 @@ async def upload_audio(file: UploadFile = File(...)):
     response.headers["Content-Disposition"] = f'attachment; filename="{file.filename}"'
     return response
 
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
     with open(f"video{videoNumber}.mp4", "wb") as f:
         f.write(await file.read())
-        
+
     # Generate thumbnail image for the uploaded video
     video_capture = cv2.VideoCapture(f"video{videoNumber}.mp4")
     success, frame = video_capture.read()
     if success:
+        # Save the thumbnail as a temporary file
         thumbnail_path = f"thumbnail{videoNumber}.jpg"
         cv2.imwrite(thumbnail_path, frame)
-    else:
-        thumbnail_path = None
 
-    return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_path})
+        # Read the thumbnail image and convert it to base64
+        with open(thumbnail_path, "rb") as thumbnail_file:
+            thumbnail_data = thumbnail_file.read()
+            thumbnail_base64 = base64.b64encode(thumbnail_data).decode("utf-8")
+
+        # Remove the temporary thumbnail file
+        os.remove(thumbnail_path)
+
+    else:
+        thumbnail_base64 = None
+
+    return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
 
 
 @app.get("/combine")
 async def combine_videos():
-    
     global audioname
-   
+
     videos = ["video1.mp4", "video2.mp4", "video3.mp4"]
     length = 6
 
@@ -110,12 +118,10 @@ async def combine_videos():
         print("not runs")
         combined2.write_videofile("test.mp4")
 
-
-
     # close
     audioname = None
 
-    # close all 
+    # close all
     clip1.reader.close()
     clip2.reader.close()
     clip3.reader.close()
@@ -124,8 +130,6 @@ async def combine_videos():
     aud1.reader.close_proc()
     aud2.reader.close_proc()
     aud3.reader.close_proc()
-
-
 
     # remove videos
     os.remove("video1.mp4")
@@ -136,12 +140,9 @@ async def combine_videos():
     os.remove("thumbnail1.jpg")
     os.remove("thumbnail2.jpg")
     os.remove("thumbnail3.jpg")
-        
+
     return FileResponse("test.mp4", media_type="video/mp4")
-    return send_file('test.mp4', as_attachment=True)
 
 
-
-
-#import uvicorn
-#uvicorn.run(app, host="localhost", port=8000)
+if __name__ == "__main__":
+    uvicorn.run(app, host="localhost", port=8000)
