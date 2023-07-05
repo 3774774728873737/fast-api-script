@@ -2,8 +2,9 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 import cv2
 from fastapi.middleware.cors import CORSMiddleware
-from moviepy.editor import VideoFileClip, clips_array
+from moviepy.editor import VideoFileClip, clips_array, concatenate_videoclips
 from moviepy.editor import *
+from moviepy.audio.AudioClip import AudioArrayClip, concatenate_audioclips
 import os
 import base64
 import uvicorn
@@ -82,58 +83,34 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
 
 @app.post("/combine")
 async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
+    video_clips = []
+    audio_clips = []
+    
     for i, file in enumerate(files, start=1):
         with open(f"video{i}2.mp4", "wb") as f:
             f.write(await file.read())
-
+        video_clip = VideoFileClip(f"video{i}2.mp4")
+        video_clips.append(video_clip)
+        
     if audio is not None:
-        # Save the uploaded audio file
         with open("audio232.mp3", "wb") as f:
             f.write(await audio.read())
+        audio_clip = AudioFileClip("audio232.mp3")
+        audio_clips.append(audio_clip)
 
-    else:
-        print("no audio")
-
-
-
-    global audioname
-
-    videos = ["video12.mp4", "video22.mp4", "video32.mp4"]
-    length = 6
-
-    clip1 = VideoFileClip("video12.mp4").subclip(0, 0 + length)
-    # get audio of clip
-    aud1 = clip1.audio
-    clip2 = VideoFileClip("video22.mp4").subclip(0, 0 + length)
-    # get audio of clip
-    aud2 = clip2.audio
-    clip3 = VideoFileClip("video32.mp4").subclip(0, 0 + length)
-    # get audio of clip
-    aud3 = clip3.audio
-
-    width = 426
-    height = 720
-
-    combined = clips_array([[clip1, clip2, clip3]])
-
-    output_width = 1280
-    output_height = 720
-
-    combined2 = combined.resize((output_width, output_height))
-
-    if audio != None:
-        print("runs")
-        # Trim audio clip to match the duration of the video
-        audio = AudioFileClip("audio232.mp3").subclip(0, combined2.duration)
-        composite_audio = CompositeAudioClip([audio, aud1, aud2, aud3])
-        combined2 = combined2.set_audio(composite_audio)
-        combined2.write_videofile("test.mp4")
-        audio.reader.close_proc()
-
-    else:
-        print("not runs")
-        combined2.write_videofile("test.mp4")
-
+    final_clip = concatenate_videoclips(video_clips)
+    final_audio = concatenate_audioclips(audio_clips) if audio_clips else None
+    
+    if final_audio is not None:
+        final_clip = final_clip.set_audio(final_audio)
+        
+    final_clip.write_videofile("test.mp4", codec="libx264", audio_codec="aac", temp_audiofile="temp-audio.m4a", remove_temp=True)
+    
+    for clip in video_clips:
+        clip.reader.close()
+        clip.audio.reader.close_proc()
+    if final_audio is not None:
+        final_audio.reader.close_proc()
 
     return FileResponse("test.mp4", media_type="video/mp4")
 
