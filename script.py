@@ -24,6 +24,11 @@ app.add_middleware(
 
 
 
+async def save_file(file: UploadFile, filename: str):
+    with open(filename, "wb") as f:
+        contents = await file.read()
+        f.write(contents)
+
 @app.post("/upload-audio")
 async def upload_audio(file: UploadFile = File(...)):
     # Save the uploaded audio file
@@ -46,13 +51,7 @@ async def upload_audio(file: UploadFile = File(...)):
 
 @app.post("/upload-videos")
 async def upload_videos(files: List[UploadFile] = File(...)):
-    print(files)
-    i = 1
-    for file in files:
-        with open(f"video{i}.mp4", "wb") as f:
-            f.write(await file.read())
-        i+=1
-
+    await save_file(file, f"video{videoNumber}.mp4")
     return {"message": "Videos uploaded successfully"}
 
 
@@ -60,8 +59,8 @@ async def upload_videos(files: List[UploadFile] = File(...)):
 async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
 
     print("HELLO WORLD")
-    with open(f"video{videoNumber}.mp4", "wb") as f:
-        f.write(await file.read())
+    await save_file(file, f"video{videoNumber}.mp4")
+
 
     # Generate thumbnail image for the uploaded video
     video_capture = cv2.VideoCapture(f"video{videoNumber}.mp4")
@@ -85,13 +84,13 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
 
 @app.post("/combine")
 async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
+    tasks = []
     for i, file in enumerate(files, start=1):
-        with open(f"video{i}2.mp4", "wb") as f:
-            f.write(await file.read())
-
+        task = save_file(file, f"video{i}2.mp4")
+        tasks.append(task)
+    await asyncio.gather(*tasks)
 
     count = 0
-
 
     if audio is not None:
         # Save the uploaded audio file
