@@ -137,8 +137,6 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
         pass
 
 
-
-
     if count > 0:
         audio_merge = audio_merge + f"amerge=inputs={count}[a]"
         maping = "-map \"[a]\""
@@ -150,7 +148,7 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
     print(audio_merge)
 
     # run a single command
-    command = f"""ffmpeg -i video1.mp4 -i video2.mp4 -i video3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -t {length} output.mp4"""
+    command = f"""ffmpeg -y -i video1.mp4 -i video2.mp4 -i video3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -t {length} output.mp4"""
 
     subprocess.run(command, shell=True)
 
