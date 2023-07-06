@@ -10,7 +10,11 @@ import uvicorn
 from typing import List
 import subprocess
 import time
+import random
+import string
 global audioname
+
+
 audioname = None
 
 
@@ -23,11 +27,6 @@ app.add_middleware(
 )
 
 
-
-async def save_file(file: UploadFile, filename: str):
-    with open(filename, "wb") as f:
-        contents = await file.read()
-        f.write(contents)
 
 @app.post("/upload-audio")
 async def upload_audio(file: UploadFile = File(...)):
@@ -51,16 +50,20 @@ async def upload_audio(file: UploadFile = File(...)):
 
 @app.post("/upload-videos")
 async def upload_videos(files: List[UploadFile] = File(...)):
-    await save_file(file, f"video{videoNumber}.mp4")
+    print(files)
+    i = 1
+    for file in files:
+        with open(f"video{i}.mp4", "wb") as f:
+            f.write(await file.read())
+        i+=1
+
     return {"message": "Videos uploaded successfully"}
 
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
-
-    print("HELLO WORLD")
-    await save_file(file, f"video{videoNumber}.mp4")
-
+    with open(f"video{videoNumber}.mp4", "wb") as f:
+        f.write(await file.read())
 
     # Generate thumbnail image for the uploaded video
     video_capture = cv2.VideoCapture(f"video{videoNumber}.mp4")
@@ -82,21 +85,33 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
     return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
 
 
+
+def generate_unique_filename():
+    timestamp = str(int(time.time()))
+    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    unique_filename = timestamp + '_' + random_string
+    return unique_filename
+
+
+
 @app.post("/combine")
 async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
-    tasks = []
+
+    file1 = generate_unique_filename()
+    audionames = generate_unique_filename()
+    outputname = generate_unique_filename()
+
     for i, file in enumerate(files, start=1):
-        task = save_file(file, f"video{i}2.mp4")
-        tasks.append(task)
-    await asyncio.gather(*tasks)
+        with open(f"{file1}.mp4", "wb") as f:
+            f.write(await file.read())
 
     count = 0
 
     if audio is not None:
         # Save the uploaded audio file
-        with open("audio232.mp3", "wb") as f:
+        with open(f"{audionames}.mp3", "wb") as f:
             f.write(await audio.read())
-            audios = "-i audio232.mp3"
+            audios = f"-i {audionames}.mp3"
             count = count + 1
 
     else:
@@ -107,7 +122,6 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
 
     global audioname
 
-    videos = ["video12.mp4", "video22.mp4", "video32.mp4"]
     length = 6
 
 
@@ -149,10 +163,8 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
     print(audio_merge)
 
     # run a single command
-    command = f"""ffmpeg -y -i video1.mp4 -i video2.mp4 -i video3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -t {length} output.mp4"""
+    command = f"""ffmpeg -y -i {file1}1.mp4 -i {file1}2.mp4 -i {file1}3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -t {length} {outputname}.mp4"""
 
     subprocess.run(command, shell=True)
 
-    return FileResponse("output.mp4", media_type="video/mp4")
-
-
+    return FileResponse(f"{outputname}.mp4", media_type="video/mp4")
