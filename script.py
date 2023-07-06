@@ -58,6 +58,8 @@ async def upload_videos(files: List[UploadFile] = File(...)):
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
+
+    print("HELLO WORLD")
     with open(f"video{videoNumber}.mp4", "wb") as f:
         f.write(await file.read())
 
