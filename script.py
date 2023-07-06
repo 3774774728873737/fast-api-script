@@ -9,8 +9,7 @@ import base64
 import uvicorn
 from typing import List
 import subprocess
-import json
-
+import time
 global audioname
 audioname = None
 
@@ -40,6 +39,7 @@ async def upload_audio(file: UploadFile = File(...)):
 
     global audioname
     audioname = f"audio{i}.mp3"
+    time.sleep(4)
 
     return {"message": "Videos uploaded successfully"}
 
@@ -136,6 +136,9 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
     else:
         pass
 
+
+
+
     if count > 0:
         audio_merge = audio_merge + f"amerge=inputs={count}[a]"
         maping = "-map \"[a]\""
@@ -147,12 +150,10 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
     print(audio_merge)
 
     # run a single command
-    command = f"""ffmpeg -y -i video1.mp4 -i video2.mp4 -i video3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -t {length} output.mp4"""
+    command = f"""ffmpeg -i video1.mp4 -i video2.mp4 -i video3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -t {length} output.mp4"""
 
     subprocess.run(command, shell=True)
 
     return FileResponse("output.mp4", media_type="video/mp4")
-
-
 
 
