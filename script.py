@@ -101,10 +101,11 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
     audionames = generate_unique_filename()
     outputname = generate_unique_filename()
 
+    i = 1
     for i, file in enumerate(files, start=1):
-        with open(f"{file1}.mp4", "wb") as f:
+        with open(f"{file1}{i}.mp4", "wb") as f:
             f.write(await file.read())
-
+        i+=1
     count = 0
 
     if audio is not None:
