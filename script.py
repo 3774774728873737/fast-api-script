@@ -9,6 +9,7 @@ import base64
 import uvicorn
 from typing import List
 import subprocess
+import json
 
 global audioname
 audioname = None
@@ -86,12 +87,19 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
         with open(f"video{i}2.mp4", "wb") as f:
             f.write(await file.read())
 
+
+    count = 0
+
+
     if audio is not None:
         # Save the uploaded audio file
         with open("audio232.mp3", "wb") as f:
             f.write(await audio.read())
+            audios = "-i audio232.mp3"
+            count = count + 1
 
     else:
+        audios = ""
         print("no audio")
 
 
@@ -102,8 +110,49 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
     length = 6
 
 
-    command = """ffmpeg -i video12.mp4 -i video22.mp4 -i video32.mp4 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720" -c:v libx264 -crf 23 -preset veryfast output.mp4"""
+    audio_merge = ";"
+    command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', "video1.mp4"]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode == 0 and result.stdout.strip() == 'audio':
+        audio_merge = audio_merge + "[0:a]"
+        count = count + 1
+    else:
+        print("no audio")
+        pass
+
+    command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', "video2.mp4"]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode == 0 and result.stdout.strip() == 'audio':
+        audio_merge = audio_merge + "[1:a]"
+        count = count + 1
+    else:
+        pass
+
+    command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', "video3.mp4"]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode == 0 and result.stdout.strip() == 'audio':
+        audio_merge = audio_merge + "[2:a]"
+        count = count + 1
+    else:
+        pass
+
+    if count > 0:
+        audio_merge = audio_merge + f"amerge=inputs={count}[a]"
+        maping = "-map \"[a]\""
+
+    else:
+        audio_merge = ""
+        maping = ""
+        
+    print(audio_merge)
+
+    # run a single command
+    command = f"""ffmpeg -i video1.mp4 -i video2.mp4 -i video3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -t {length} output.mp4"""
 
     subprocess.run(command, shell=True)
 
     return FileResponse("output.mp4", media_type="video/mp4")
+
+
+
+
