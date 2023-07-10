@@ -2,21 +2,13 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 import cv2
 from fastapi.middleware.cors import CORSMiddleware
-from moviepy.editor import VideoFileClip, clips_array
-from moviepy.editor import *
-import os
-import base64
-import uvicorn
 from typing import List
 import subprocess
 import time
 import random
 import string
-global audioname
-
-
-audioname = None
-
+import os
+import base64
 
 app = FastAPI()
 app.add_middleware(
@@ -27,50 +19,45 @@ app.add_middleware(
 )
 
 
+def generate_unique_filename():
+    timestamp = str(int(time.time()))
+    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    unique_filename = timestamp + '_' + random_string
+    return unique_filename
+
 
 @app.post("/upload-audio")
 async def upload_audio(file: UploadFile = File(...)):
-    # Save the uploaded audio file
-    i = 1
-    while True:
-        if os.path.exists(f"audio{i}.mp3"):
-            i += 1
-        else:
-            break
-
-    with open(f"audio{i}.mp3", "wb") as f:
+    unique_filename = generate_unique_filename() + ".mp3"
+    with open(unique_filename, "wb") as f:
         f.write(await file.read())
-
-    global audioname
-    audioname = f"audio{i}.mp3"
     time.sleep(4)
-
-    return {"message": "Videos uploaded successfully"}
+    return {"message": "Audio uploaded successfully", "filename": unique_filename}
 
 
 @app.post("/upload-videos")
 async def upload_videos(files: List[UploadFile] = File(...)):
-    print(files)
-    i = 1
+    filenames = []
     for file in files:
-        with open(f"video{i}.mp4", "wb") as f:
+        unique_filename = generate_unique_filename() + ".mp4"
+        with open(unique_filename, "wb") as f:
             f.write(await file.read())
-        i+=1
-
-    return {"message": "Videos uploaded successfully"}
+        filenames.append(unique_filename)
+    return {"message": "Videos uploaded successfully", "filenames": filenames}
 
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
-    with open(f"video{videoNumber}.mp4", "wb") as f:
+    unique_filename = generate_unique_filename() + ".mp4"
+    with open(unique_filename, "wb") as f:
         f.write(await file.read())
 
     # Generate thumbnail image for the uploaded video
-    video_capture = cv2.VideoCapture(f"video{videoNumber}.mp4")
+    video_capture = cv2.VideoCapture(unique_filename)
     success, frame = video_capture.read()
     if success:
         # Save the thumbnail as a temporary file
-        thumbnail_path = f"thumbnail{videoNumber}23.jpg"
+        thumbnail_path = unique_filename.replace(".mp4", ".jpg")
         cv2.imwrite(thumbnail_path, frame)
 
         # Read the thumbnail image and convert it to base64
@@ -81,90 +68,44 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
     else:
         thumbnail_base64 = None
 
-        
     return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
-
-
-
-def generate_unique_filename():
-    timestamp = str(int(time.time()))
-    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-    unique_filename = timestamp + '_' + random_string
-    return unique_filename
-
 
 
 @app.post("/combine")
 async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
-
-    file1 = generate_unique_filename()
-    audionames = generate_unique_filename()
-    outputname = generate_unique_filename()
-
-    i = 1
+    audio_merge = ";"
+    input_files = ""
+    audios = ""
+    audio_mapping = ""
     for i, file in enumerate(files, start=1):
-        with open(f"{file1}{i}.mp4", "wb") as f:
+        file_name = generate_unique_filename() + ".mp4"
+        with open(file_name, "wb") as f:
             f.write(await file.read())
-        i+=1
-    count = 0
+
+        input_files += f"-i {file_name} "
+        command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', file_name]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip() == 'audio':
+            audio_merge += f"[{i - 1}:a]"
 
     if audio is not None:
-        # Save the uploaded audio file
-        with open(f"{audionames}.mp3", "wb") as f:
+        audio_name = generate_unique_filename() + ".mp3"
+        with open(audio_name, "wb") as f:
             f.write(await audio.read())
-            audios = f"-i {audionames}.mp3"
-            count = count + 1
+        audios = f"-i {audio_name}"
+        audio_merge += "[3:a]"
+    audio_merge += f"amerge=inputs={len(files)}[a]"
 
-    else:
-        audios = ""
-        print("no audio")
+    if len(files) > 0:
+        audio_mapping = "-map \"[a]\""
 
-
-
-    global audioname
-
-    length = 6
-
-
-    audio_merge = ";"
-    command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', "video1.mp4"]
-    result = subprocess.run(command, capture_output=True, text=True)
-    if result.returncode == 0 and result.stdout.strip() == 'audio':
-        audio_merge = audio_merge + "[0:a]"
-        count = count + 1
-    else:
-        print("no audio")
-        pass
-
-    command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', "video2.mp4"]
-    result = subprocess.run(command, capture_output=True, text=True)
-    if result.returncode == 0 and result.stdout.strip() == 'audio':
-        audio_merge = audio_merge + "[1:a]"
-        count = count + 1
-    else:
-        pass
-
-    command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', "video3.mp4"]
-    result = subprocess.run(command, capture_output=True, text=True)
-    if result.returncode == 0 and result.stdout.strip() == 'audio':
-        audio_merge = audio_merge + "[2:a]"
-        count = count + 1
-    else:
-        pass
-
-
-    if count > 0:
-        audio_merge = audio_merge + f"amerge=inputs={count}[a]"
-        maping = "-map \"[a]\""
-
-    else:
-        audio_merge = ""
-        maping = ""
-        
-    print(audio_merge)
-
-    # run a single command
-    command = f"""ffmpeg -y -i {file1}1.mp4 -i {file1}2.mp4 -i {file1}3.mp4 {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v]{audio_merge} " -map "[v]" {maping} -c:v libx264 -crf 23 -preset veryfast -c:a libmp3lame -b:a 128k -t {length} {outputname}.mp4"""
+    output_name = generate_unique_filename() + ".mp4"
+    command = f"""ffmpeg -y {input_files} {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v];{audio_merge} " -map "[v]" {audio_mapping} -c:v libx264 -crf 23 -preset veryfast -c:a libmp3lame -b:a 128k {output_name}"""
     subprocess.run(command, shell=True)
 
-    return FileResponse(f"{outputname}.mp4", media_type="video/mp4")
+    return FileResponse(output_name, media_type="video/mp4")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="localhost", port=8000)
