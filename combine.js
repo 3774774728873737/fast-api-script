@@ -19,7 +19,7 @@ function combine() {
     var loadingOverlay = document.getElementById('loadingOverlay');
     loadingOverlay.classList.add('active');
 
-    fetch('combine')
+    fetch('/combine')
       .then(response => {
         if (response.ok) {
           return response.blob();
