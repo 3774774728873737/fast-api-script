@@ -21,7 +21,7 @@ function handleFileUpload(videoNumber) {
     }
     formData.append('videoNumber', videoNumber); // Add the videoNumber to the formData
 
-    fetch('http://localhost:8000/upload', {
+    fetch('https://fast-api-script-0d0703f4a5dc.herokuapp.com/upload', {
       method: 'POST',
       body: formData,
     })
