@@ -77,7 +77,7 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
     return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
 
 
-@app.post("/combine")
+@app.get("/combine")
 async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
     audio_merge = ";"
     input_files = ""
