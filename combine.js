@@ -19,7 +19,7 @@ function combine() {
     var loadingOverlay = document.getElementById('loadingOverlay');
     loadingOverlay.classList.add('active');
 
-    fetch('http://localhost:8000/combine')
+    fetch('https://fast-api-script-0d0703f4a5dc.herokuapp.com/combine')
       .then(response => {
         if (response.ok) {
           return response.blob();
