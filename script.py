@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/", StaticFiles(directory=os.getcwd(), html=True), name="static")
+app.mount("/static", StaticFiles(directory=os.getcwd(), html=True), name="static")
 
 @app.get("/")
 def read_root():
