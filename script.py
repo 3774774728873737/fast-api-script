@@ -18,6 +18,11 @@ app.add_middleware(
 
 
 
+app.mount("/", StaticFiles(directory=os.getcwd(), html=True), name="static")
+
+@app.get("/")
+def read_root():
+    return RedirectResponse(url='/index.html')
 
 
 
