@@ -1,0 +1,212 @@
+
+
+
+
+
+
+
+
+* {
+  height: 100vh;
+}
+
+
+html, body {margin: 0; height: 100%; overflow: hidden}
+
+
+body {
+  height: 100vh;
+}
+
+.loader {
+  border: 16px solid #f3f3f3;
+  border-top: 16px solid #3498db;
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#loadingOverlay {
+  position: absolute; /* Update the position to absolute */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none; /* Initially hidden */
+  z-index: 999; /* Add a higher z-index value */
+}
+
+#loadingOverlay.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    height: 100vh;
+      }
+  
+  .flex-item {
+    width: 33.3vw;
+    height: 100vh;
+    background-color: #ddd;
+    position: relative;
+  }
+  
+  .flex-item:nth-child(1) {
+    background-color: white;
+  }
+  
+  .flex-item:nth-child(2) {
+    background-color: white;
+  }
+  
+  .flex-item:nth-child(3) {
+    background-color: white;
+  }
+  video {
+    height:100vh;
+    width: 98%;
+  }
+  
+  .flex-item {
+    position: relative; /* make the flex item a relative container for the button */
+  }
+  
+  .fancy-button {
+    position: absolute;
+    bottom: 10px; /* adjust bottom distance from flex item */
+    left: 50%; /* center horizontally */
+    transform: translateX(-50%); /* adjust for button width */
+    background-color: #FE5F55;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 12px 24px;
+    height: 5vh;
+    width: 10vw;
+    overflow: hidden;
+    margin-bottom: 10px;
+    z-index: 2342342948893423423;
+  }
+  
+  
+  .fancy-button::before {
+    content: '';
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    height: 120px;
+    position: absolute;
+    top: -60px;
+    left: -60px;
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+    width: 120px;
+    z-index: 2342342948893423423;
+  }
+  
+  .fancy-button:hover::before {
+    transform: scale(2);
+  }
+  
+  .fancy-button::after {
+    content: '';
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    height: 120px;
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+    width: 120px;
+    z-index: 2342342948893423423;
+  }
+  
+  .fancy-button:hover::after {
+    transform: scale(2);
+  }
+  
+  .fancy-button:hover {
+    background-color: #333745;
+  }
+  
+
+
+
+
+  .fancy-button2 {
+    position: absolute;
+    top: 15px; /* adjust bottom distance from flex item */
+    left: 50%; /* center horizontally */
+    transform: translateX(-50%); /* adjust for button width */
+    background-color: #FE5F55;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 12px 24px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    /* make this: style="position: absolute; top: 0; left: 50%" */
+    z-index: 2342342948893423423;
+       height: 5vh;
+    width: 10vw;
+    
+  }
+  
+  
+  .fancy-button2::before {
+    content: '';
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    height: 120px;
+    position: absolute;
+    top: -60px;
+    left: -60px;
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+    width: 120px;
+    z-index: 2342342948893423423;
+  }
+  
+  .fancy-button2:hover::before {
+    transform: scale(2);
+  }
+  
+  .fancy-button2::after {
+    content: '';
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    height: 120px;
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+    width: 120px;
+    z-index: 2342342948893423423;
+  }
+  
+  .fancy-button2:hover::after {
+    transform: scale(2);
+  }
+  
+  .fancy-button2:hover {
+    background-color: #333745;
+  }
+  

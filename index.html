@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+        <link rel="stylesheet" href="style.css">
+    <style>
+      #loadingOverlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+        z-index: 999;
+      }
+
+      #loadingOverlay.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #loadingOverlay .loader {
+        border: 16px solid #f3f3f3;
+        border-top: 16px solid #3498db;
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 2s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Add the loading overlay -->
+    <div id="loadingOverlay">
+      <div class="loader"></div>
+    </div>
+    <div class="flex-container">
+      <div class="flex-item">
+        <input type="file" multiple accept="video/mp4" id="fileInput1" style="display:none">
+        <button class="fancy-button" onclick="chooseFile(1)">Upload video</button>
+        <div class="video1">
+          <video class="vid1" id="videoPlayer1" width="450" height="540" controls>
+            <source id="videoSource1" src="" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <img class="thumbnail" id="videoThumbnail1" src="" alt="Video Thumbnail" style="display: none;">
+        </div>
+      </div>
+      <div class="flex-item">
+        <button class="fancy-button2" id = "combineButton" onclick="combine()" >Export</button>
+        <input type="file" multiple accept="video/mp4" id="fileInput2" style="display:none">
+        <button class="fancy-button" onclick="chooseFile(2)">Upload video</button>
+        <div class="video2">
+          <video id="videoPlayer2" width="450" height="540" controls>
+            <source id="videoSource2" src="" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <img class="thumbnail" id="videoThumbnail2" src="" alt="Video Thumbnail" style="display: none;">
+        </div>
+      </div>
+      <div class="flex-item">
+        <input type="file" multiple accept="video/mp4" id="fileInput3" style="display:none">
+        <button class="fancy-button" onclick="chooseFile(3)">Upload video</button>
+        <div class="video3">
+          <video id="videoPlayer3" width="450" height="540" controls>
+            <source id="videoSource3" src="" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <img class="thumbnail" id="videoThumbnail3" src="" alt="Video Thumbnail" style="display: none;">
+        </div>
+      </div>
+    </div>
+    
+    <script src="script.js">
+    </script>
+    <script src="combine.js">
+    </script>
+  <script src="script.py"></script>
+ 
+  <script>
+  </script>
+  </body>
+</html>
