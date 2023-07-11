@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 import cv2
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
@@ -7,6 +8,7 @@ import subprocess
 import time
 import random
 import string
+import os
 import base64
 
 app = FastAPI()
@@ -16,6 +18,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/", StaticFiles(directory=os.getcwd(), html=True), name="static")
+
+@app.get("/")
+def read_root():
+    return RedirectResponse(url='/index.html')
 
 
 def generate_unique_filename():
