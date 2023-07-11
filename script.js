@@ -24,7 +24,7 @@ function handleFileUpload(videoNumber) {
     }
     formData.append('videoNumber', videoNumber); // Add the videoNumber to the formData
 
-    fetch('http://localhost:8000/upload', {
+    fetch('/upload', {
       method: 'POST',
       body: formData,
     })
