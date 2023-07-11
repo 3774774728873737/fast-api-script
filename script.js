@@ -56,7 +56,7 @@ function handleAudioUpload() {
   var formData = new FormData();
   formData.append('file', audioFile);
 
-  fetch('http://localhost:8000/upload-audio', {
+  fetch('/upload-audio', {
     method: 'POST',
     body: formData,
   })
