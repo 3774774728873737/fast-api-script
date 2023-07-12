@@ -46,6 +46,33 @@ function handleFileUpload(videoNumber) {
   fileInput.click();
 }
 
+function handleAudioUpload() {
+  var audioInput = document.getElementById('audioInput');
+  
+  audioInput.onchange = function () {
+    var files = audioInput.files;
+    var formData = new FormData();
+    for (var i = 0; i < files.length; i++) {
+      formData.append('audioFiles', files[i]);
+    }
+
+    fetch('/uploadAudio', {
+      method: 'POST',
+      body: formData,
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data.message);
+        uniqueIds.push(data.unique_id); // Store the unique ID
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+  };
+
+  audioInput.click();
+}
+
 function combine() {
   var loadedVideos = 0;
   var videosToLoad = 2; 
@@ -103,4 +130,6 @@ document.addEventListener("DOMContentLoaded", function() {
       handleFileUpload(videoNumber);
     });
   });
+  var audioInput = document.getElementById('audioInput');
+  audioInput.addEventListener('change', handleAudioUpload);
 });
