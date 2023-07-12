@@ -91,7 +91,8 @@ async def combine_videos(unique_ids: str):
     video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(len(videos))])}]hstack=inputs={len(videos)}[v]')
     video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos))])}]amix=inputs={len(videos)}[a]')
 
-    ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "4096k", "-preset", "fast", f"static/test_{unique_id}.mp4"])
+    # ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "4096k", "-preset", "fast", f"static/test_{unique_id}.mp4"])
+    ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "4096k", "-preset", "fast", "-t", "30", f"static/test_{unique_id}.mp4"])
     subprocess.run(ffmpeg_command)
 
     # remove all the temporary files
