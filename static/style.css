@@ -1,6 +1,11 @@
 
 
 
+
+
+
+
+
 * {
   height: 100vh;
 }
@@ -202,69 +207,6 @@ body {
   }
   
   .fancy-button2:hover {
-    background-color: #333745;
-  }
-  
-
-  .fancy-button3 {
-    position: absolute;
-    top: 65px; /* adjust bottom distance from flex item */
-    left: 50%; /* center horizontally */
-    transform: translateX(-50%); /* adjust for button width */
-    background-color: #FE5F55;
-    border: none;
-    border-radius: 10px;
-    color: #fff;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 12px 24px;
-    overflow: hidden;
-    margin-bottom: 10px;
-    /* make this: style="position: absolute; top: 0; left: 50%" */
-    z-index: 2342342948893423423;
-       height: 5vh;
-    width: 10vw;
-    
-  }
-  
-  
-  .fancy-button3::before {
-    content: '';
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    height: 120px;
-    position: absolute;
-    top: -60px;
-    left: -60px;
-    transform: scale(0);
-    transition: transform 0.5s ease-out;
-    width: 120px;
-    z-index: 2342342948893423423;
-  }
-  
-  .fancy-button3:hover::before {
-    transform: scale(2);
-  }
-  
-  .fancy-button3::after {
-    content: '';
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    height: 120px;
-    position: absolute;
-    top: -60px;
-    right: -60px;
-    transform: scale(0);
-    transition: transform 0.5s ease-out;
-    width: 120px;
-    z-index: 2342342948893423423;
-  }
-  
-  .fancy-button3:hover::after {
-    transform: scale(2);
-  }
-  
-  .fancy-button3:hover {
     background-color: #333745;
   }
   

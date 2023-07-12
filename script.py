@@ -1,117 +1,108 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import JSONResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 import cv2
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import subprocess
-import time
-import random
-import string
 import os
-import base64
+import uuid
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Update this with your desired origins
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.mount("/", StaticFiles(directory=os.getcwd(), html=True), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def read_root():
-    return RedirectResponse(url='/index.html')
-
-
-def generate_unique_filename():
-    timestamp = str(int(time.time()))
-    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-    unique_filename = timestamp + '_' + random_string
-    return unique_filename
-
-
-@app.post("/upload-audio")
-async def upload_audio(file: UploadFile = File(...)):
-    unique_filename = generate_unique_filename() + ".mp3"
-    with open(unique_filename, "wb") as f:
-        f.write(await file.read())
-    time.sleep(4)
-    return {"message": "Audio uploaded successfully", "filename": unique_filename}
-
-
-@app.post("/upload-videos")
-async def upload_videos(files: List[UploadFile] = File(...)):
-    filenames = []
-    for file in files:
-        unique_filename = generate_unique_filename() + ".mp4"
-        with open(unique_filename, "wb") as f:
-            f.write(await file.read())
-        filenames.append(unique_filename)
-    return {"message": "Videos uploaded successfully", "filenames": filenames}
-
+    return Response(content=open("index.html", "r").read(), media_type="text/html")
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)):
-    unique_filename = generate_unique_filename() + ".mp4"
-    with open(unique_filename, "wb") as f:
-        f.write(await file.read())
-
-    # Generate thumbnail image for the uploaded video
-    video_capture = cv2.VideoCapture(unique_filename)
-    success, frame = video_capture.read()
-    if success:
-        # Save the thumbnail as a temporary file
-        thumbnail_path = unique_filename.replace(".mp4", ".jpg")
-        cv2.imwrite(thumbnail_path, frame)
-
-        # Read the thumbnail image and convert it to base64
-        with open(thumbnail_path, "rb") as thumbnail_file:
-            thumbnail_data = thumbnail_file.read()
-            thumbnail_base64 = base64.b64encode(thumbnail_data).decode("utf-8")
-
-    else:
-        thumbnail_base64 = None
-
-    return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
-
-
-@app.post("/combine")
-async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
-    audio_merge = ";"
-    input_files = ""
-    audios = ""
-    audio_mapping = ""
-    for i, file in enumerate(files, start=1):
-        file_name = generate_unique_filename() + ".mp4"
-        with open(file_name, "wb") as f:
+async def upload_file(files: List[UploadFile] = File(...), videoNumber: int = Form(...)):
+    unique_id = str(uuid.uuid4())
+    width = 426
+    height = 720
+    video_files = []
+    for file in files:
+        temp_file_name = f"static/temp_{unique_id}_{file.filename}"
+        with open(temp_file_name, "wb") as f:
             f.write(await file.read())
 
-        input_files += f"-i {file_name} "
-        command = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_type', '-of', 'default=noprint_wrappers=1:nokey=1', file_name]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip() == 'audio':
-            audio_merge += f"[{i - 1}:a]"
+        resized_file_name = f"static/resized_{unique_id}_{file.filename}"
+        print("File name: ", file.filename)
+        subprocess.run([
+            "ffmpeg", "-i", temp_file_name, "-vf",
+            f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}",
+            resized_file_name
+        ])
+        video_files.append(resized_file_name)
 
-    if audio is not None:
-        audio_name = generate_unique_filename() + ".mp3"
-        with open(audio_name, "wb") as f:
-            f.write(await audio.read())
-        audios = f"-i {audio_name}"
-        audio_merge += "[3:a]"
-    audio_merge += f"amerge=inputs={len(files)}[a]"
+    # concatenate videos into one
+    list_file = f"static/list_{unique_id}.txt"
+    with open(list_file, "w") as f:
+        for video_file in video_files:
+            f.write(f"file '{os.path.join(os.getcwd(), video_file)}'\n")
 
-    if len(files) > 0:
-        audio_mapping = "-map \"[a]\""
+    # concatenate videos into one
+    final_clip_name = f"static/video_{unique_id}_{videoNumber}.mp4"
+    subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", list_file, "-c", "copy", final_clip_name])
+    os.remove(list_file)  # remove the list file
+    # Generate thumbnail image for the uploaded video
+    video_capture = cv2.VideoCapture(final_clip_name)
+    success, frame = video_capture.read()
+    if success:
+        thumbnail_path = f"static/thumbnail_{unique_id}_{videoNumber}.jpg"
+        cv2.imwrite(thumbnail_path, frame)
+    else:
+        thumbnail_path = None
 
-    output_name = generate_unique_filename() + ".mp4"
-    command = f"""ffmpeg -y {input_files} {audios} -vsync 2 -filter_complex "[0:v]scale=426:720[v0];[1:v]scale=426:720[v1];[2:v]scale=426:720[v2];[v0][v1][v2]hstack=3,scale=1280:720[v];{audio_merge} " -map "[v]" {audio_mapping} -c:v libx264 -crf 23 -preset veryfast -c:a libmp3lame -b:a 128k {output_name}"""
-    subprocess.run(command, shell=True)
+    return JSONResponse({"message": "Videos uploaded successfully", "imagePath": thumbnail_path, "unique_id": unique_id})
 
-    return FileResponse(output_name, media_type="video/mp4")
+@app.get("/combine/{unique_ids}")
+async def combine_videos(unique_ids: str):
 
+    for file in os.listdir("static"):
+        if file.startswith("test_"):
+            os.remove(os.path.join("static", file))
+
+    unique_ids = unique_ids.split(",")
+    videos = [f"static/video_{unique_id}_{i+1}.mp4" for i, unique_id in enumerate(unique_ids)]
+    
+    width = 426
+    height = 720
+    unique_id = str(uuid.uuid4())
+    video_filters = []
+     # ffmpeg command to generate the combined video
+    ffmpeg_command = ["ffmpeg"]
+    for i, video in enumerate(videos):
+        ffmpeg_command.extend(["-i", video])
+        video_filters.append(f"[{i}:v]scale=426:720, pad=1280:720:(ow-iw)/2:(oh-ih)/2[v{i}]")
+        video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
+
+    # Combine the videos into a grid and mix the audio
+    output_width = 1280
+    output_height = 720
+
+    video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(len(videos))])}]hstack=inputs={len(videos)}[v]')
+    video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos))])}]amix=inputs={len(videos)}[a]')
+
+    ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "1024k", "-s", f"{output_width}x{output_height}", "-preset", "ultrafast", f"static/test_{unique_id}.mp4"])
+    subprocess.run(ffmpeg_command)
+
+    # remove all the temporary files
+    for video in videos:
+        os.remove(video)
+    
+    for file in os.listdir("static"):
+        if file.startswith("video_") or file.startswith("resized_") or file.startswith("temp_") or file.startswith("thumbnail_"):
+            os.remove(os.path.join("static", file))
+    
+    return FileResponse(f"static/test_{unique_id}.mp4", media_type="video/mp4")
 
 if __name__ == "__main__":
     import uvicorn
