@@ -57,7 +57,10 @@
         </div>
       </div>
       <div class="flex-item">
-        <button class="fancy-button2" id = "combineButton" onclick="combine()" >Export</button>
+        <button class="fancy-button2" id = "combineButton" onclick="combine()">Export</button>
+        <!-- Input field for the audio file -->
+        <input type="file" accept="audio/*" id="audioInput" style="display:none">
+        <button class="fancy-button" onclick="document.getElementById('audioInput').click()">Upload Audio</button>
         <input type="file" multiple accept="video/mp4" id="fileInput2" style="display:none">
         <button class="fancy-button" onclick="chooseFile(2)">Upload video</button>
         <div class="video2">
