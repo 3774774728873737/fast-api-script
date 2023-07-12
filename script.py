@@ -81,7 +81,7 @@ async def combine_videos(unique_ids: str):
     ffmpeg_command = ["ffmpeg"]
     for i, video in enumerate(videos):
         ffmpeg_command.extend(["-i", video])
-        video_filters.append(f"[{i}:v]scale=426:720, pad=1280:720:(ow-iw)/2:(oh-ih)/2[v{i}]")
+        video_filters.append(f"[{i}:v]scale=640:-1[v{i}]")
         video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
 
     # Combine the videos into a grid and mix the audio
