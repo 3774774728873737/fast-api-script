@@ -22,6 +22,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def read_root():
     return Response(content=open("index.html", "r").read(), media_type="text/html")
 
+@app.post("/upload-audio")
+async def upload_audio_file(file: UploadFile = File(...)):
+    audio_file_name = f"static/audio_{file.filename}"
+    with open(audio_file_name, "wb") as f:
+        f.write(await file.read())
+    return JSONResponse({"message": "Audio file uploaded successfully", "audio_file": audio_file_name})
+
+
 @app.post("/upload")
 async def upload_file(files: List[UploadFile] = File(...), videoNumber: int = Form(...)):
     unique_id = str(uuid.uuid4())
@@ -63,8 +71,8 @@ async def upload_file(files: List[UploadFile] = File(...), videoNumber: int = Fo
 
     return JSONResponse({"message": "Videos uploaded successfully", "imagePath": thumbnail_path, "unique_id": unique_id})
 
-@app.get("/combine/{unique_ids}")
-async def combine_videos(unique_ids: str):
+@app.get("/combine/{unique_ids}/{audio_file}")
+async def combine_videos(unique_ids: str, audio_file: str = None):
 
     for file in os.listdir("static"):
         if file.startswith("test_"):
@@ -82,16 +90,24 @@ async def combine_videos(unique_ids: str):
     for i, video in enumerate(videos):
         ffmpeg_command.extend(["-i", video])
         video_filters.append(f"[{i}:v]scale=640:-1[v{i}]")
-        video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
 
-    # Combine the videos into a grid and mix the audio
+    if audio_file:
+        ffmpeg_command.extend(["-i", audio_file]) # add the audio file as an input
+        video_filters.append(f"[{len(videos)}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a]") # process the audio
+    else:
+        for i, video in enumerate(videos):
+            video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
+
+    # Combine the videos into a grid and replace the audio
     output_width = 1280
     output_height = 720
 
     video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(len(videos))])}]hstack=inputs={len(videos)}[v]')
-    video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos))])}]amix=inputs={len(videos)}[a]')
+    if audio_file:
+        video_filters.append(f'["a"]') # replace the audio with the uploaded audio
+    else:
+        video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos))])}]amix=inputs={len(videos)}[a]')
 
-    # ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "4096k", "-preset", "fast", f"static/test_{unique_id}.mp4"])
     ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "4096k", "-preset", "fast", "-t", "30", f"static/test_{unique_id}.mp4"])
     subprocess.run(ffmpeg_command)
 
@@ -104,6 +120,7 @@ async def combine_videos(unique_ids: str):
             os.remove(os.path.join("static", file))
     
     return FileResponse(f"static/test_{unique_id}.mp4", media_type="video/mp4")
+
 
 if __name__ == "__main__":
     import uvicorn
