@@ -22,7 +22,7 @@ function handleFileUpload(videoNumber) {
     }
     formData.append('videoNumber', videoNumber);
 
-    fetch('http://localhost:8000/upload', {
+    fetch('/upload', {
       method: 'POST',
       body: formData,
     })
@@ -62,7 +62,7 @@ function combine() {
     var loadingOverlay = document.getElementById('loadingOverlay');
     loadingOverlay.classList.add('active');
 
-    fetch('http://localhost:8000/combine/' + uniqueIds.join(',')) // Send all unique IDs
+    fetch('/combine' + uniqueIds.join(',')) // Send all unique IDs
       .then(response => {
         if (response.ok) {
           return response.blob();
