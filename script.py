@@ -95,20 +95,16 @@ async def combine_videos(unique_ids: str, audio_id: str = None):
         video_filters.append(f"[{i}:v]scale=640:-1[v{i}]")
         video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
 
-    if audio_id:  # if audio_id is provided, add it to the ffmpeg command
+    if audio_id != "0":  # if audio_id is provided, merge the audio with the video
         ffmpeg_command.extend(["-i", f"static/audio_{audio_id}.mp3"])
-        video_filters.append(f"[{len(videos)}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{len(videos)}]")
+        video_filters.append(f"[{len(videos)}:a]aformat=sample_fmts=fltp:sample_rates=22100:channel_layouts=stereo[a{len(videos)}]")
         video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos) + 1)])}]amix=inputs={len(videos) + 1}[a]')
     else:
         video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos))])}]amix=inputs={len(videos)}[a]')
 
-    # # Combine the videos into a grid and mix the audio
-    # output_width = 1280
-    # output_height = 720
-
     video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(len(videos))])}]hstack=inputs={len(videos)}[v]')
 
-    ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "4096k", "-preset", "fast", "-t", "30", f"static/test_{unique_id}.mp4"])
+    ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "1000k", "-preset", "ultrafast", "-t", "30", "-r", "24", f"static/test_{unique_id}.mp4"])
     subprocess.run(ffmpeg_command)
 
     # remove all the temporary files
@@ -120,6 +116,7 @@ async def combine_videos(unique_ids: str, audio_id: str = None):
             os.remove(os.path.join("static", file))
     
     return FileResponse(f"static/test_{unique_id}.mp4", media_type="video/mp4")
+
 
 
 if __name__ == "__main__":
