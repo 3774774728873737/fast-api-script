@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 * {
   height: 100vh;
 }
@@ -207,6 +199,28 @@ body {
   }
   
   .fancy-button2:hover {
+    background-color: #333745;
+  }
+  
+  .fancy-button-audio {
+    position: absolute;
+    top: 10%; /* adjust bottom distance from flex item */
+    left: 50%; /* center horizontally */
+    transform: translateX(-50%); /* adjust for button width */
+    background-color: #FE5F55;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 12px 24px;
+    height: 5vh;
+    width: 10vw;
+    overflow: hidden;
+    z-index: 2342342948893423423;
+  }
+  
+  .fancy-button-audio:hover {
     background-color: #333745;
   }
   
