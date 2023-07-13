@@ -47,7 +47,6 @@ function handleFileUpload(videoNumber) {
 }
 document.getElementById('audioInput').onchange = function () {
   var files = this.files;
-  alert(files.length + ' audio files selected');
   var formData = new FormData();
   for (var i = 0; i < files.length; i++) {
     formData.append('audio', files[i]);
