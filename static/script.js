@@ -89,7 +89,10 @@ function combine() {
     var loadingOverlay = document.getElementById('loadingOverlay');
     loadingOverlay.classList.add('active');
 
-    fetch('/combine/' + uniqueIds.join(',')) // Send all unique IDs
+    var audioId = (uniqueIds.length > videosToLoad) ? uniqueIds.pop() : null;
+    var fetchUrl = audioId ? ('/combine/' + uniqueIds.join(',') + '/' + audioId) : ('/combine/' + uniqueIds.join(','));
+
+    fetch(fetchUrl) // Send all unique IDs and optional audio ID
       .then(response => {
         if (response.ok) {
           return response.blob();
@@ -113,6 +116,7 @@ function combine() {
     console.log('At least 2 videos must be loaded');
   }
 }
+
 
 function chooseFile(videoNumber) {
   var fileInput = document.getElementById('fileInput' + videoNumber);
