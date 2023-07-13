@@ -88,21 +88,26 @@ async def combine_videos(unique_ids: str, audio_id: str = None):
     height = 720
     unique_id = str(uuid.uuid4())
     video_filters = []
-    # ffmpeg command to generate the combined video
     ffmpeg_command = ["ffmpeg"]
-    for i, video in enumerate(videos):
-        ffmpeg_command.extend(["-i", video])
-        video_filters.append(f"[{i}:v]scale=640:-1[v{i}]")
-        video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
+
+    for i in range(3):  # for 3 video sections
+        if i < len(videos):  # if video exists for this section
+            video = videos[i]
+            ffmpeg_command.extend(["-i", video])
+            video_filters.append(f"[{i}:v]scale={width}:{height},pad=426:720:(426-iw)/2:(720-ih)/2:black[v{i}]")  # pad video to required size
+            video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
+        else:  # if no video exists for this section
+            video_filters.append(f"color=black:s=426x720:d=30[v{i}]")  # generate blank video
+            video_filters.append(f"aevalsrc=0:d=30[a{i}]")  # generate silent audio
 
     if audio_id != "0":  # if audio_id is provided, merge the audio with the video
         ffmpeg_command.extend(["-i", f"static/audio_{audio_id}.mp3"])
         video_filters.append(f"[{len(videos)}:a]aformat=sample_fmts=fltp:sample_rates=22100:channel_layouts=stereo[a{len(videos)}]")
         video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos) + 1)])}]amix=inputs={len(videos) + 1}[a]')
     else:
-        video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos))])}]amix=inputs={len(videos)}[a]')
+        video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(3)])}]amix=inputs={3}[a]')
 
-    video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(len(videos))])}]hstack=inputs={len(videos)}[v]')
+    video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(3)])}]hstack=inputs={3}[v]')
 
     ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "1000k", "-preset", "ultrafast", "-t", "30", "-r", "24", f"static/test_{unique_id}.mp4"])
     subprocess.run(ffmpeg_command)
