@@ -60,9 +60,13 @@
         <button class="fancy-button2" id = "combineButton" onclick="combine()">Export</button>
         <!-- Input field for the audio file -->
         <input type="file" accept="audio/*" id="audioInput" style="display:none">
-        <button class="fancy-button" onclick="document.getElementById('audioInput').click()">Upload Audio</button>
+        <button class="fancy-button-audio" onclick="document.getElementById('audioInput').click()">Upload Audio</button>
         <input type="file" multiple accept="video/mp4" id="fileInput2" style="display:none">
         <button class="fancy-button" onclick="chooseFile(2)">Upload video</button>
+          <!-- <button class="fancy-button-audio" onclick="uploadAudio()">Upload audio</button>
+          <input type="file" id="audioInput" style="display:none"> -->
+          <input type="file" accept="audio/*" id="audioInput" style="display:none">
+        <button class="fancy-button-audio" onclick="document.getElementById('audioInput').click()">Upload Audio</button>
         <div class="video2">
           <video id="videoPlayer2" width="450" height="540" controls>
             <source id="videoSource2" src="" type="video/mp4">
@@ -71,6 +75,7 @@
           <img class="thumbnail" id="videoThumbnail2" src="" alt="Video Thumbnail" style="display: none;">
         </div>
       </div>
+      
       <div class="flex-item">
         <input type="file" multiple accept="video/mp4" id="fileInput3" style="display:none">
         <button class="fancy-button" onclick="chooseFile(3)">Upload video</button>
@@ -83,6 +88,7 @@
         </div>
       </div>
     </div>
+    
     
     <script src="static/script.js">
     </script>
