@@ -23,12 +23,15 @@ def read_root():
     return Response(content=open("index.html", "r").read(), media_type="text/html")
 
 @app.post("/upload-audio")
-async def upload_audio_file(file: UploadFile = File(...)):
-    audio_file_name = f"static/audio_{file.filename}"
-    with open(audio_file_name, "wb") as f:
-        f.write(await file.read())
-    return JSONResponse({"message": "Audio file uploaded successfully", "audio_file": audio_file_name})
-
+async def upload_audio(audio: UploadFile = File(None)):
+    if audio:
+        unique_id = str(uuid.uuid4())
+        audio_file_name = f"static/audio_{unique_id}.mp3"
+        with open(audio_file_name, "wb") as f:
+            f.write(await audio.read())
+        return JSONResponse({"message": "Audio uploaded successfully", "unique_id": unique_id})
+    else:
+        return JSONResponse({"message": "No audio uploaded"})
 
 @app.post("/upload")
 async def upload_file(files: List[UploadFile] = File(...), videoNumber: int = Form(...)):
@@ -71,8 +74,8 @@ async def upload_file(files: List[UploadFile] = File(...), videoNumber: int = Fo
 
     return JSONResponse({"message": "Videos uploaded successfully", "imagePath": thumbnail_path, "unique_id": unique_id})
 
-@app.get("/combine/{unique_ids}/{audio_file}")
-async def combine_videos(unique_ids: str, audio_file: str = None):
+@app.get("/combine/{unique_ids}/{audio_id}")
+async def combine_videos(unique_ids: str, audio_id: str = None):
 
     for file in os.listdir("static"):
         if file.startswith("test_"):
@@ -85,28 +88,25 @@ async def combine_videos(unique_ids: str, audio_file: str = None):
     height = 720
     unique_id = str(uuid.uuid4())
     video_filters = []
-     # ffmpeg command to generate the combined video
+    # ffmpeg command to generate the combined video
     ffmpeg_command = ["ffmpeg"]
     for i, video in enumerate(videos):
         ffmpeg_command.extend(["-i", video])
         video_filters.append(f"[{i}:v]scale=640:-1[v{i}]")
+        video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
 
-    if audio_file:
-        ffmpeg_command.extend(["-i", audio_file]) # add the audio file as an input
-        video_filters.append(f"[{len(videos)}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a]") # process the audio
-    else:
-        for i, video in enumerate(videos):
-            video_filters.append(f"[{i}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{i}]")
-
-    # Combine the videos into a grid and replace the audio
-    output_width = 1280
-    output_height = 720
-
-    video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(len(videos))])}]hstack=inputs={len(videos)}[v]')
-    if audio_file:
-        video_filters.append(f'["a"]') # replace the audio with the uploaded audio
+    if audio_id:  # if audio_id is provided, add it to the ffmpeg command
+        ffmpeg_command.extend(["-i", f"static/audio_{audio_id}.mp3"])
+        video_filters.append(f"[{len(videos)}:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a{len(videos)}]")
+        video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos) + 1)])}]amix=inputs={len(videos) + 1}[a]')
     else:
         video_filters.append(f'{"[" + "][".join([f"a{i}" for i in range(len(videos))])}]amix=inputs={len(videos)}[a]')
+
+    # # Combine the videos into a grid and mix the audio
+    # output_width = 1280
+    # output_height = 720
+
+    video_filters.append(f'{"[" + "][".join([f"v{i}" for i in range(len(videos))])}]hstack=inputs={len(videos)}[v]')
 
     ffmpeg_command.extend(["-filter_complex", '; '.join(video_filters), "-map", "[v]", "-map", "[a]", "-b:v", "4096k", "-preset", "fast", "-t", "30", f"static/test_{unique_id}.mp4"])
     subprocess.run(ffmpeg_command)
@@ -116,7 +116,7 @@ async def combine_videos(unique_ids: str, audio_file: str = None):
         os.remove(video)
     
     for file in os.listdir("static"):
-        if file.startswith("video_") or file.startswith("resized_") or file.startswith("temp_") or file.startswith("thumbnail_"):
+        if file.startswith("video_") or file.startswith("resized_") or file.startswith("temp_") or file.startswith("thumbnail_") or file.startswith("audio_"):
             os.remove(os.path.join("static", file))
     
     return FileResponse(f"static/test_{unique_id}.mp4", media_type="video/mp4")
