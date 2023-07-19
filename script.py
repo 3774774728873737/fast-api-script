@@ -81,7 +81,6 @@ async def upload_file(file: UploadFile = File(...), videoNumber: int = Form(...)
     else:
         thumbnail_base64 = None
 
-        
     return JSONResponse({"message": "Video uploaded successfully", "imagePath": thumbnail_base64})
 
 
@@ -97,12 +96,17 @@ def generate_unique_filename():
 @app.post("/combine")
 async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile = File(None)):
 
+
+
+    print(len(files))
     file1 = generate_unique_filename()
     audionames = generate_unique_filename()
     outputname = generate_unique_filename()
 
+
     i = 1
     for i, file in enumerate(files, start=1):
+        print(file1)
         with open(f"{file1}{i}.mp4", "wb") as f:
             f.write(await file.read())
         i+=1
@@ -169,3 +173,8 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
 
     return FileResponse(f"{outputname}.mp4", media_type="video/mp4")
 
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="localhost", port=8000)
+
+# changedasdasdsaasd
