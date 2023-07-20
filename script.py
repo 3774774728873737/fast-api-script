@@ -41,68 +41,95 @@ def resize_videos(clips, width, height):
 
     outnames = []
 
-    for clip in clips:
-        file1 = generate_unique_filename()
+    file1 = generate_unique_filename()
 
+    for input_file in clips:
+        cmd_probe = [
+            'ffprobe',
+            '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=width,height',
+            '-of', 'csv=p=0:s=x',
+            input_file
+        ]
+        result = subprocess.run(cmd_probe, stdout=subprocess.PIPE, text=True)
+        video_info = result.stdout.strip().split('x')
+        video_width, video_height = int(video_info[0]), int(video_info[1])
 
-        clip = VideoFileClip(clip)
-
-        # Determine the aspect ratio of the input clip
-        aspect_ratio = clip.w / clip.h
-        
-        # If the aspect ratio of the input clip is greater than the desired aspect ratio
-        # it means that the clip is wider and we need to crop it horizontally
+        # Calculate the scale and crop values
+        aspect_ratio = video_width / video_height
         if aspect_ratio > width / height:
             new_width = int(height * aspect_ratio)
             new_height = height
         else:
             new_width = width
             new_height = int(width / aspect_ratio)
+        scale = f'{new_width}:{new_height}'
+        crop_x = (new_width - width) // 2
+        crop_y = (new_height - height) // 2
 
-        # Resize the clip to the new dimensions
-        clip = clip.resize((new_width, new_height))
+        # Build the ffmpeg command
+        cmd_ffmpeg = [
+            'ffmpeg',
+            '-i', input_file,
+            '-vf', f'scale={scale},crop={width}:{height}:{crop_x}:{crop_y}',
+            f"{input_file}resized.mp4"
+        ]
 
-        # Crop the clip to the desired dimensions
-        clip = crop(clip, width=width, height=height, x_center=clip.w / 2, y_center=clip.h / 2)
+        # Run the ffmpeg command
+        subprocess.run(cmd_ffmpeg)
 
-        # save 
-        clip.write_videofile(f"{file1}resized.mp4")
-
-        outnames.append(f"{file1}resized.mp4")
+        outnames.append(f"{input_file}resized.mp4")
 
     out = concatenate_videos(outnames, f"{file1}concat.mp4")
 
     return out
 
 
-def resize_single(clip, width, height):
-
-    clip = VideoFileClip(clip)
+def resize_single(input_file, width, height):
 
     file1 = generate_unique_filename()
 
-    # Determine the aspect ratio of the input clip
-    aspect_ratio = clip.w / clip.h
-    
-    # If the aspect ratio of the input clip is greater than the desired aspect ratio
-    # it means that the clip is wider and we need to crop it horizontally
+
+
+    cmd_probe = [
+        'ffprobe',
+        '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=width,height',
+        '-of', 'csv=p=0:s=x',
+        input_file
+    ]
+    result = subprocess.run(cmd_probe, stdout=subprocess.PIPE, text=True)
+    video_info = result.stdout.strip().split('x')
+    video_width, video_height = int(video_info[0]), int(video_info[1])
+
+    # Calculate the scale and crop values
+    aspect_ratio = video_width / video_height
     if aspect_ratio > width / height:
         new_width = int(height * aspect_ratio)
         new_height = height
     else:
         new_width = width
         new_height = int(width / aspect_ratio)
+    scale = f'{new_width}:{new_height}'
+    crop_x = (new_width - width) // 2
+    crop_y = (new_height - height) // 2
 
-    # Resize the clip to the new dimensions
-    clip = clip.resize((new_width, new_height))
+    # Build the ffmpeg command
+    cmd_ffmpeg = [
+        'ffmpeg',
+        '-i', input_file,
+        '-vf', f'scale={scale},crop={width}:{height}:{crop_x}:{crop_y}',
+        f"{input_file}resized.mp4"
+    ]
 
-    # Crop the clip to the desired dimensions
-    clip = crop(clip, width=width, height=height, x_center=clip.w / 2, y_center=clip.h / 2)
+    # Run the ffmpeg command
+    subprocess.run(cmd_ffmpeg)
 
     # save 
-    clip.write_videofile(f"{file1}resized.mp4")
 
-    return f"{file1}resized.mp4"
+    return f"{input_file}resized.mp4"
 
 
 def concatenate_videos(input_files, output_file):
@@ -354,3 +381,5 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
 
     return FileResponse(f"{outputname}.mp4", media_type="video/mp4")
 
+
+# changedasdasdsaasd
