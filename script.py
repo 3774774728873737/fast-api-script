@@ -248,7 +248,6 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
             total_vid.append(out)
             index = index + 1
 
-    input()
 
     count = 0
 
