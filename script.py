@@ -138,8 +138,16 @@ def concatenate_videos(input_files, output_file):
     with open(f'{txt}.txt', 'w') as f:
         for file in input_files:
             f.write(f"file '{file}'\n")
-    subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', f'{txt}.txt', '-c', 'copy', output_file])
+    ffmpeg_cmd = ['ffmpeg',
+                  '-vsync', '2',  # Added "-vsync 2" option
+                  '-f', 'concat',
+                  '-safe', '0',
+                  '-i', f'{txt}.txt',
+                  '-c', 'copy',
+                  output_file]
 
+    # Run the ffmpeg command
+    subprocess.run(ffmpeg_cmd)
     return output_file
 
 
@@ -249,6 +257,7 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
             index = index + 1
 
 
+
     count = 0
 
     if audio is not None:
@@ -260,7 +269,6 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
 
     else:
         audios = ""
-        print("no audio")
 
 
     if audios != "":
@@ -306,22 +314,22 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
         # Mix all audio streams, including the external audio file
         filtergraph += f"[a1][a2][a3][3:a]amix=inputs=4[a]"
 
-        # Construct the ffmpeg command
         ffmpeg_cmd = ['ffmpeg',
-                    '-i', video1,
-                    '-i', video2,
-                    '-i', video3,
-                    '-i', f"{audionames}.mp3",
-                    '-filter_complex', filtergraph,
-                    '-map', '[v]',
-                    '-map', '[a]',
-                    '-t', str(final_audio_duration),
-                    '-c:v', 'libx264',
-                    '-c:a', 'aac',  # Output audio codec
-                    '-crf', '18',
-                    '-preset', 'fast',
-                    '-y',
-                    output_file]
+                      '-vsync', '2',  # Added "-vsync 2" option
+                      '-i', video1,
+                      '-i', video2,
+                      '-i', video3,
+                      '-i', f"{audionames}.mp3",
+                      '-filter_complex', filtergraph,
+                      '-map', '[v]',
+                      '-map', '[a]',
+                      '-t', str(final_audio_duration),
+                      '-c:v', 'libx264',
+                      '-c:a', 'aac',  # Output audio codec
+                      '-crf', '18',
+                      '-preset', 'fast',
+                      '-y',
+                      output_file]
 
         # Run the ffmpeg command
         subprocess.run(ffmpeg_cmd)
@@ -361,24 +369,22 @@ async def combine_videos(files: List[UploadFile] = File(...), audio: UploadFile 
 
         # Construct the ffmpeg command
         ffmpeg_cmd = ['ffmpeg',
-                    '-i', video1,
-                    '-i', video2,
-                    '-i', video3,
-                    '-filter_complex', filtergraph,
-                    '-map', '[v]',
-                    '-map', '[a]',
-                    '-t', str(longest_duration),
-                    '-c:v', 'libx264',
-                    '-c:a', 'aac',  # Output audio codec
-                    '-crf', '18',
-                    '-preset', 'fast',
-                    '-y',
-                    output_file]
+                      '-vsync', '2',  # Added "-vsync 2" option
+                      '-i', video1,
+                      '-i', video2,
+                      '-i', video3,
+                      '-filter_complex', filtergraph,
+                      '-map', '[v]',
+                      '-map', '[a]',
+                      '-t', str(longest_duration),
+                      '-c:v', 'libx264',
+                      '-c:a', 'aac',  # Output audio codec
+                      '-crf', '18',
+                      '-preset', 'fast',
+                      '-y',
+                      output_file]
 
         # Run the ffmpeg command
         subprocess.run(ffmpeg_cmd)
 
     return FileResponse(f"{outputname}.mp4", media_type="video/mp4")
-
-
-# changedasdasdsaasd
